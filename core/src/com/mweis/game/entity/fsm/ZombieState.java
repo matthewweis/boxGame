@@ -1,16 +1,19 @@
 package com.mweis.game.entity.fsm;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.ai.GdxAI;
 import com.badlogic.gdx.ai.fsm.State;
-import com.badlogic.gdx.ai.msg.MessageManager;
 import com.badlogic.gdx.ai.msg.Telegram;
-import com.badlogic.gdx.math.Vector2;
 import com.mweis.game.entity.agents.ZombieAgent;
-import com.mweis.game.util.Constants;
-import com.mweis.game.util.Messages;
 
 public enum ZombieState implements State<ZombieAgent> {
-	STEER() {		
+	STEER() {
+		
+		@Override
+		public void enter(ZombieAgent agent) {
+			agent.steer.getBody().setActive(true);
+		}
+		
 		@Override
 		public void update(ZombieAgent agent) {
 			if (agent.target != null) {
@@ -19,7 +22,7 @@ public enum ZombieState implements State<ZombieAgent> {
 					agent.fsm.changeState(ZombieState.ATTACK);
 				}
 			}
-			agent.steer.update(Constants.DELTA_TIME);
+			agent.steer.update(GdxAI.getTimepiece().getDeltaTime());
 		}
 
 		@Override
@@ -33,7 +36,8 @@ public enum ZombieState implements State<ZombieAgent> {
 		public void enter(ZombieAgent agent) {
 			Gdx.app.log(this.toString(), "Enter " + agent.fsm.getCurrentState().toString());
 			agent.steer.getBody().setLinearVelocity(0, 0);
-			agent.steer.getBody().setAngularVelocity(0.0f);
+//			agent.steer.getBody().setAngularVelocity(0.0f);
+			agent.steer.getBody().setActive(false);
 			agent.timer = agent.attackTime;
 		}
 		
@@ -42,7 +46,7 @@ public enum ZombieState implements State<ZombieAgent> {
 			if (agent.timer <= 0) {
 				agent.fsm.changeState(ZombieState.STEER);
 			} else {
-				agent.timer -= Constants.DELTA_TIME;
+				agent.timer -= GdxAI.getTimepiece().getDeltaTime();
 			}			
 		}
 

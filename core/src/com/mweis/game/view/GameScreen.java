@@ -29,6 +29,7 @@ import com.mweis.game.entity.agents.ZombieAgent;
 import com.mweis.game.entity.components.AgentComponent;
 import com.mweis.game.entity.fsm.ZombieState;
 import com.mweis.game.entity.systems.AgentSystem;
+import com.mweis.game.gfx.RenderingManager;
 import com.mweis.game.util.Constants;
 import com.mweis.game.util.Mappers;
 import com.mweis.game.world.WorldFactory;
@@ -50,10 +51,9 @@ public class GameScreen implements Screen {
 	public void show() {
 		Gdx.app.log("GameScreen", "GameScreen is now being shown");
 		
-		float w = 720.0f/8.0f;
-		float h = 480.0f/8.0f;
+		float w = 720.0f/8.0f; // = 90
+		float h = 480.0f/8.0f; // = 60
 		cam = new OrthographicCamera(w, h);
-		
 		batch = new SpriteBatch();
         world = WorldFactory.generateWorld(true);
         debugRenderer = new Box2DDebugRenderer();
@@ -62,8 +62,9 @@ public class GameScreen implements Screen {
 		engine.addSystem(new AgentSystem());
 		
 		// make 2 entities, one of which chases the other
-		target = EntityFactory.spawnZombie(20, 20, world, engine, true, 1.0f);
-		chaser = EntityFactory.spawnZombie(0, 5, world, engine, false, 1.25f);
+		boolean independentFacing = false;
+		target = EntityFactory.spawnZombie(20, 20, world, engine, true, 1.0f, independentFacing);
+		chaser = EntityFactory.spawnZombie(0, 5, world, engine, false, 1.25f, independentFacing);
 		
 		AgentComponent<ZombieAgent> target_c = Mappers.agentMapper.get(target);
 		AgentComponent<ZombieAgent> chaser_c = Mappers.agentMapper.get(chaser);
@@ -85,7 +86,7 @@ public class GameScreen implements Screen {
 				.setDecelerationRadius(3.0f);
 		
 		Wander<Vector2> wanderSB = new Wander<Vector2>(target_c.agent.steer) //
-				.setFaceEnabled(true) // We want to use Face internally (independent facing is on)
+				.setFaceEnabled(independentFacing) // We want to use Face internally (independent facing is on)
 				.setAlignTolerance(0.001f) // Used by Face
 				.setDecelerationRadius(1) // Used by Face
 				.setTimeToTarget(0.1f) // Used by Face
@@ -96,7 +97,7 @@ public class GameScreen implements Screen {
 		
 		Pursue<Vector2> pursueSB = new Pursue<Vector2>(chaser_c.agent.steer, target_c.agent.steer)
 				.setEnabled(true)
-				.setMaxPredictionTime(1.0f);
+				.setMaxPredictionTime(2.0f);
 		
 		target_c.agent.steer.setSteeringBehavior(wanderSB);
 		target_c.agent.fsm.changeState(ZombieState.STEER);
@@ -131,12 +132,15 @@ public class GameScreen implements Screen {
     	GdxAI.getTimepiece().update(Constants.DELTA_TIME);
     	handleInput();
     	cam.update();
-    	batch.setProjectionMatrix(cam.combined);
-    	world.step(Constants.DELTA_TIME, 6, 2); // 10, 8?
-    	engine.update(Constants.DELTA_TIME); // what is best order of world -> engine?
+    	world.step(GdxAI.getTimepiece().getDeltaTime(), 6, 2); // 10, 8?
+    	engine.update(GdxAI.getTimepiece().getDeltaTime()); // what is best order of world -> engine?
 	}
 	
 	private void draw() {
+		RenderingManager.render(cam.combined, batch, engine); // use this to render
+//		Matrix4 drawMat = new Matrix4(cam.combined);
+//		drawMat.scl(Constants.METERS_TO_PIXELS);
+//		debugRenderer.render(world, drawMat);//drawMat);
 		debugRenderer.render(world, cam.combined);
 	}
 
@@ -167,7 +171,7 @@ public class GameScreen implements Screen {
 	}
 	
 	private void handleInput() {
-		final float sensitivity = 1.0f;
+		final float sensitivity = 1.0f * cam.zoom;
         if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
             cam.translate(-sensitivity, 0, 0);
             //If the LEFT Key is pressed, translate the camera -3 units in the X-Axis
@@ -199,17 +203,16 @@ public class GameScreen implements Screen {
         		Gdx.graphics.setFullscreenMode(Gdx.graphics.getDisplayMode());
         	}
         }
-        
         if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
         	isCameraLocked = !isCameraLocked;
         } 
         if (isCameraLocked) {
-        	cam.position.set(Vector3.Zero);
-		} else {
+//        	cam.position.set(Vector3.Zero);
+        } else if (!isCameraLocked) {
 			final float camEdge = 0.07f; // 7% of the screen can be used for cam movement
 	        final float xCameraBound = Gdx.graphics.getWidth() * camEdge;
 	        final float yCameraBound = Gdx.graphics.getHeight() * camEdge;
-	        final float camSpeed = 1.0f;
+	        final float camSpeed = 3.0f * cam.zoom;
 	        
 	        if (Gdx.input.getX() < xCameraBound) {
 	        	cam.translate(-camSpeed, 0, 0);

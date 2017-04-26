@@ -25,7 +25,6 @@ public class ZombieAgent implements Agent {
 	}
 
 	public void update() {
-//		if (steer.getPosition().dst2(target.getPosition()) <= attackRangeSquared) {		
 		fsm.update();
 	}
 

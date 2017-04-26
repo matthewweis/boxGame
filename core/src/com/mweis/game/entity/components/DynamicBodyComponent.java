@@ -10,9 +10,9 @@ public class DynamicBodyComponent implements Component {
 	
 	public DynamicBodyComponent(Body body) {
 		this.body = body;
-		if (body.getType() != BodyType.DynamicBody) {
-			Gdx.app.error("DynamicBodyComponent", "A non-dynamic body was added to DynamicBodyComponent",
-					new IllegalArgumentException());
-		}
+//		if (body.getType() != BodyType.DynamicBody) {
+//			Gdx.app.error("DynamicBodyComponent", "A non-dynamic body was added to DynamicBodyComponent",
+//					new IllegalArgumentException());
+//		}
 	}
 }

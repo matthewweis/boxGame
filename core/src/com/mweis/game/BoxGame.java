@@ -3,6 +3,7 @@ package com.mweis.game;
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
+import com.mweis.game.gfx.ResourceManager;
 import com.mweis.game.view.GameScreen;
 import com.mweis.game.view.ScreenManager;
 
@@ -11,6 +12,7 @@ public class BoxGame  implements ApplicationListener {
 	@Override
 	public void create() {
 		Gdx.graphics.setTitle("Pathfinder");
+		ResourceManager.loadTexture("paladin_run", "paladin_run.png");
 		ScreenManager.setScreen(new GameScreen());
 	}
 
@@ -41,5 +43,6 @@ public class BoxGame  implements ApplicationListener {
 		// NOTE: ScreenManager handles disposal of screens on change. 
 		// This only exists for the final screen to close (Graphic resource dump on close)
 		ScreenManager.getCurrentScreen().dispose();
+		ResourceManager.dispose();
 	}
 }
