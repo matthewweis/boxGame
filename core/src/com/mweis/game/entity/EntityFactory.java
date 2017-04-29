@@ -11,6 +11,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.physics.box2d.World;
 import com.mweis.game.box2d.Box2dBodyFactory;
+import com.mweis.game.entity.agents.PlayerAgent;
 import com.mweis.game.entity.agents.ZombieAgent;
 import com.mweis.game.entity.components.AgentComponent;
 import com.mweis.game.entity.components.AnimationComponent;
@@ -21,6 +22,87 @@ import com.mweis.game.gfx.AnimationMap;
 import com.mweis.game.gfx.ResourceManager;
 
 public class EntityFactory {
+	
+	public static Entity spawnZombie(float x, float y, World world, Engine engine, boolean isSensor, float speedFactor, boolean independentFacing) {
+		float radius = 0.32f;
+		float density = 5.0f;
+		Body body = Box2dBodyFactory.createDynamicCircle(new Vector2(x, y), radius, world, isSensor, density);
+				
+		Entity entity = new Entity();
+		
+		entity.add(createZombieAnimComponent(2.0f));
+		
+		entity.add(new DynamicBodyComponent(body));
+		
+		InterpolationComponent ic = new InterpolationComponent();
+		entity.add(ic);
+		
+		SteeringComponent sc = new SteeringComponent(body, independentFacing, radius);
+		
+		// FOR ARRIVE
+//		sc.setMaxLinearSpeed(5);
+//		sc.setMaxLinearAcceleration(100);
+		
+		// FOR WANDER
+		sc.setMaxLinearAcceleration(30*speedFactor);
+		sc.setMaxLinearSpeed(30*speedFactor);
+		
+//		if (independentFacing) { // can be set regardless
+//			sc.setMaxAngularAcceleration(.5f*speedFactor); // greater than 0 because independent facing is enabled
+//			sc.setMaxAngularSpeed(5*speedFactor);
+//		}
+		
+		entity.add(sc);
+		AgentComponent<ZombieAgent> ac = new AgentComponent<ZombieAgent>(new ZombieAgent(entity));
+		
+		entity.add(ac);
+		
+//		ic.synchronize(body);
+		engine.addEntity(entity);
+		
+		body.setLinearDamping(5.0f);
+		return entity;
+	}
+	
+	public static Entity spawnPlayer(float x, float y, World world, Engine engine, float speedFactor) {
+		float radius = 0.32f;
+		Body body = Box2dBodyFactory.createDynamicCircle(new Vector2(x, y), radius, world, false, 1.0f);
+				
+		Entity entity = new Entity();
+		
+		entity.add(createZombieAnimComponent(2.0f)); // use zombie anim for now
+		
+		entity.add(new DynamicBodyComponent(body));
+		
+		InterpolationComponent ic = new InterpolationComponent();
+		entity.add(ic);
+		
+		SteeringComponent sc = new SteeringComponent(body, false, radius);
+		
+		// FOR ARRIVE
+//		sc.setMaxLinearSpeed(5);
+//		sc.setMaxLinearAcceleration(100);
+		
+		// FOR WANDER
+		sc.setMaxLinearAcceleration(10*speedFactor);
+		sc.setMaxLinearSpeed(3*speedFactor);
+		
+//		if (independentFacing) { // can be set regardless
+//			sc.setMaxAngularAcceleration(10f*speedFactor); // greater than 0 because independent facing is enabled
+//			sc.setMaxAngularSpeed(20*speedFactor);
+//		}
+		
+		entity.add(sc);
+		AgentComponent<PlayerAgent> ac = new AgentComponent<PlayerAgent>(new PlayerAgent(entity, world));
+		
+		entity.add(ac);
+		
+//		ic.synchronize(body);
+		
+		engine.addEntity(entity);
+		body.setLinearDamping(5.0f);
+		return entity;
+	}
 	
 	private static AnimationComponent createZombieAnimComponent(float scale) {
 		Texture walkSheet = ResourceManager.getTexture("paladin_run");
@@ -157,48 +239,6 @@ public class EntityFactory {
 		float anim_oy = ratioY * (walkSheet.getWidth() / FRAME_COLS) / 2;
 		
 		return new AnimationComponent(map, new Vector2(anim_ox, anim_oy), scale, scale);
-	}
-	
-	public static Entity spawnZombie(float x, float y, World world, Engine engine, boolean isSensor, float speedFactor, boolean independentFacing) {
-		float radius = 0.32f;
-		Body body = Box2dBodyFactory.createDynamicCircle(new Vector2(x, y), radius, world, isSensor);
-		
-		Sprite sprite = new Sprite(new Texture(Gdx.files.internal("badlogic.jpg")));
-		
-		Entity entity = new Entity();
-		
-		entity.add(createZombieAnimComponent(2.0f));
-		
-		entity.add(new DynamicBodyComponent(body));
-		
-		InterpolationComponent ic = new InterpolationComponent();
-		entity.add(ic);
-		
-		SteeringComponent sc = new SteeringComponent(body, independentFacing, radius);
-		
-		// FOR ARRIVE
-//		sc.setMaxLinearSpeed(5);
-//		sc.setMaxLinearAcceleration(100);
-		
-		// FOR WANDER
-		sc.setMaxLinearAcceleration(10*speedFactor);
-		sc.setMaxLinearSpeed(3*speedFactor);
-		
-//		if (independentFacing) { // can be set regardless
-			sc.setMaxAngularAcceleration(.5f*speedFactor); // greater than 0 because independent facing is enabled
-			sc.setMaxAngularSpeed(5*speedFactor);
-//		}
-		
-		entity.add(sc);
-		AgentComponent<ZombieAgent> ac = new AgentComponent<ZombieAgent>(new ZombieAgent(entity));
-		
-		entity.add(ac);
-		
-//		ic.synchronize(body);
-		
-		engine.addEntity(entity);
-		
-		return entity;
 	}
 	
 	private EntityFactory() { };

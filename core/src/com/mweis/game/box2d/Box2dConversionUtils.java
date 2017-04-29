@@ -5,11 +5,11 @@ import com.mweis.game.util.Constants;
 public final class Box2dConversionUtils {
 	
 	public static float pixelsToMeters (int pixels) {
-		return (float)pixels * Constants.PIXELS_TO_METERS;
+		return (float)pixels * Constants.MPP;
 	}
 
 	public static int metersToPixels (float meters) {
-		return (int)(meters * Constants.METERS_TO_PIXELS);
+		return (int)(meters * Constants.PPM);
 	}
 	
 	private Box2dConversionUtils() { };

@@ -5,9 +5,11 @@ import com.badlogic.ashley.core.Engine;
 import com.badlogic.ashley.core.Entity;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.Input.Buttons;
 import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.ai.GdxAI;
+import com.badlogic.gdx.ai.msg.MessageDispatcher;
 import com.badlogic.gdx.ai.msg.MessageManager;
 import com.badlogic.gdx.ai.msg.Telegram;
 import com.badlogic.gdx.ai.msg.Telegraph;
@@ -32,30 +34,43 @@ import com.mweis.game.entity.systems.AgentSystem;
 import com.mweis.game.gfx.RenderingManager;
 import com.mweis.game.util.Constants;
 import com.mweis.game.util.Mappers;
+import com.mweis.game.util.Messages;
 import com.mweis.game.world.WorldFactory;
+
+import box2dLight.PointLight;
+import box2dLight.RayHandler;
 
 public class GameScreen implements Screen {
 	
 	private Engine engine;
-	private Entity target, chaser;
+//	private Entity target, chaser;
 	
 	private OrthographicCamera cam;
 	private SpriteBatch batch;
-    
+	    
     private World world;
     private Box2DDebugRenderer debugRenderer;
-	
+//	private RayHandler rayHandler;
+    
     private boolean isCameraLocked;
 	
+    /*
+     * TODO
+     * Need to abstract Agents more ?
+     * Need to make SteeringComponent only hold a SteeringClass
+     */
+    
+    
 	@Override
 	public void show() {
 		Gdx.app.log("GameScreen", "GameScreen is now being shown");
 		
-		float w = 720.0f/8.0f; // = 90
-		float h = 480.0f/8.0f; // = 60
+		float w = 720.0f/1.0f; //  /8 = 90
+		float h = 480.0f/1.0f; //  /8 = 60
 		cam = new OrthographicCamera(w, h);
 		batch = new SpriteBatch();
         world = WorldFactory.generateWorld(true);
+//        rayHandler = new RayHandler(world);
         debugRenderer = new Box2DDebugRenderer();
         
         engine = new Engine();
@@ -63,57 +78,37 @@ public class GameScreen implements Screen {
 		
 		// make 2 entities, one of which chases the other
 		boolean independentFacing = false;
-		target = EntityFactory.spawnZombie(20, 20, world, engine, true, 1.0f, independentFacing);
-		chaser = EntityFactory.spawnZombie(0, 5, world, engine, false, 1.25f, independentFacing);
+		Entity target = EntityFactory.spawnZombie(5, 0, world, engine, false, 0.60f, independentFacing);
+		Entity chaser = EntityFactory.spawnZombie(0, 5, world, engine, false, 0.60f, independentFacing);
+		Entity player = EntityFactory.spawnPlayer(0, 0, world, engine, 1.0f);
 		
-		AgentComponent<ZombieAgent> target_c = Mappers.agentMapper.get(target);
-		AgentComponent<ZombieAgent> chaser_c = Mappers.agentMapper.get(chaser);
-		chaser_c.agent.target = target_c.agent.steer;
-		/*
-		 * Max. Linear Arr = 100.0
-		 * Max. Linear Speed = 5.0
-		 * Deceleration Radius = 3.0
-		 * Arrival tolerance = 0.001
-		 * time to target = 0.1 (sec)
-		 * 
-		 * ==
-		 * 
-		 * bounding radius = 0.32
-		 */
-		Arrive<Vector2> arriveSB = new Arrive<Vector2>(chaser_c.agent.steer, target_c.agent.steer)
-				.setTimeToTarget(0.1f) //
-				.setArrivalTolerance(0.001f) //
-				.setDecelerationRadius(3.0f);
+		AgentComponent<ZombieAgent> zombie1 = Mappers.agentMapper.get(target);
+		AgentComponent<ZombieAgent> zombie2 = Mappers.agentMapper.get(chaser);
 		
-		Wander<Vector2> wanderSB = new Wander<Vector2>(target_c.agent.steer) //
-				.setFaceEnabled(independentFacing) // We want to use Face internally (independent facing is on)
-				.setAlignTolerance(0.001f) // Used by Face
-				.setDecelerationRadius(1) // Used by Face
-				.setTimeToTarget(0.1f) // Used by Face
-				.setWanderOffset(3) //
-				.setWanderOrientation(3) //
-				.setWanderRadius(1) //
-				.setWanderRate(MathUtils.PI2 * 4);
+		zombie1.agent.setWander();
+		zombie1.agent.setPursue(Mappers.steeringMapper.get(player));
+		zombie2.agent.setWander();
+		zombie2.agent.setPursue(Mappers.steeringMapper.get(player));
 		
-		Pursue<Vector2> pursueSB = new Pursue<Vector2>(chaser_c.agent.steer, target_c.agent.steer)
-				.setEnabled(true)
-				.setMaxPredictionTime(2.0f);
-		
-		target_c.agent.steer.setSteeringBehavior(wanderSB);
-		target_c.agent.fsm.changeState(ZombieState.STEER);
-		
-		chaser_c.agent.steer.setSteeringBehavior(pursueSB);
-		chaser_c.agent.fsm.changeState(ZombieState.STEER);
-		
+		zombie1.agent.fsm.changeState(ZombieState.PURSUE);
+		zombie2.agent.fsm.changeState(ZombieState.PURSUE);
+
 	
 		// setup input (this class is the listener)
 		setupInput();
-		
+		spawnTestLights();
 		initMessaging();
 	}
 	
 	private void initMessaging() {
-		MessageManager.getInstance().dispatchMessage(0, engine);
+		
+	}
+	
+	private void spawnTestLights() {
+		final int RAYS_NUM = 5000;
+		final float lightDistance = 40.0f;
+//		new PointLight(rayHandler, RAYS_NUM, new Color(0.75f,0.75f,0.75f,1), lightDistance, 5.0f, 0.0f);
+//		new PointLight(rayHandler, RAYS_NUM, new Color(0.75f,0.25f,0.75f,1), lightDistance, 30.0f, 45.0f);
 	}
 	
 	private float accumulator = 0.0f;
@@ -132,16 +127,24 @@ public class GameScreen implements Screen {
     	GdxAI.getTimepiece().update(Constants.DELTA_TIME);
     	handleInput();
     	cam.update();
-    	world.step(GdxAI.getTimepiece().getDeltaTime(), 6, 2); // 10, 8?
+    	MessageManager.getInstance().update();
+    	world.step(GdxAI.getTimepiece().getDeltaTime(), 8, 3);
+    	Matrix4 drawMat = new Matrix4(cam.combined);
+		drawMat.scl(Constants.PPM);
+//		rayHandler.update();
     	engine.update(GdxAI.getTimepiece().getDeltaTime()); // what is best order of world -> engine?
 	}
 	
 	private void draw() {
-		RenderingManager.render(cam.combined, batch, engine); // use this to render
-//		Matrix4 drawMat = new Matrix4(cam.combined);
-//		drawMat.scl(Constants.METERS_TO_PIXELS);
-//		debugRenderer.render(world, drawMat);//drawMat);
-		debugRenderer.render(world, cam.combined);
+		Matrix4 drawMat = new Matrix4(cam.combined);
+		drawMat.scl(Constants.PPM);
+		
+//		RenderingManager.render(cam.combined, batch, engine);
+//		RenderingManager.render(drawMat, batch, engine);
+//		rayHandler.setCombinedMatrix(drawMat);
+//		rayHandler.render();
+		debugRenderer.render(world, drawMat);//drawMat);
+//		debugRenderer.render(world, cam.combined);
 	}
 
 	@Override
@@ -168,6 +171,7 @@ public class GameScreen implements Screen {
 	public void dispose() {
 		Gdx.app.log("GameScreen", "GameScreen was disposed");
 		batch.dispose();
+//		rayHandler.dispose();
 	}
 	
 	private void handleInput() {
@@ -225,13 +229,35 @@ public class GameScreen implements Screen {
 	        	cam.translate(0, -camSpeed, 0);
 	        }
 		}
+        
+	 if (Gdx.input.isButtonPressed(Buttons.RIGHT)) {
+     	vec.x = Gdx.input.getX();
+     	vec.y = Gdx.input.getY();
+     	Vector3 mouse3 = cam.unproject(vec);
+     	Vector2 worldCoords = new Vector2(mouse3.x, mouse3.y);
+     	worldCoords.scl(Constants.MPP);
+     	
+     	MessageManager.getInstance().dispatchMessage(Messages.PLAYER_MOVE_TO_X, worldCoords);
+     }
 	}
 	
+	Vector3 vec = new Vector3();
 	private void setupInput() {
 		
 		Gdx.input.setInputProcessor(new InputProcessor() {
             @Override
             public boolean touchDown(int x, int y, int pointer, int button) {
+//                if (button == Input.Buttons.RIGHT) {
+//                	vec.x = x;
+//                	vec.y = y;
+//                	Vector3 mouse3 = cam.unproject(vec);
+//                	Vector2 worldCoords = new Vector2(mouse3.x, mouse3.y);
+//                	worldCoords.scl(Constants.MPP);
+//                	
+//                	MessageManager.getInstance().dispatchMessage(Messages.PLAYER_MOVE_TO_X, worldCoords);
+//                	
+//                	return true;
+//                }
                 return false;
             }
 

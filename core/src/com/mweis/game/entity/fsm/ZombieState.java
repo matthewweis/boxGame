@@ -4,29 +4,66 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.ai.GdxAI;
 import com.badlogic.gdx.ai.fsm.State;
 import com.badlogic.gdx.ai.msg.Telegram;
+import com.badlogic.gdx.math.Vector2;
 import com.mweis.game.entity.agents.ZombieAgent;
 
 public enum ZombieState implements State<ZombieAgent> {
-	STEER() {
+	PURSUE() {
 		
 		@Override
 		public void enter(ZombieAgent agent) {
-			agent.steer.getBody().setActive(true);
+			agent.steer.setSteeringBehavior(agent.getPursue());
 		}
 		
 		@Override
 		public void update(ZombieAgent agent) {
 			if (agent.target != null) {
 				if (agent.steer.getPosition().dst2(agent.target.getPosition()) <= agent.attackRangeSquared) {
-//					MessageManager.getInstance().dispatchMessage(Messages.IN_ATTACK_RANGE);
 					agent.fsm.changeState(ZombieState.ATTACK);
+					return; // must return after state change
 				}
 			}
 			agent.steer.update(GdxAI.getTimepiece().getDeltaTime());
 		}
 
 		@Override
+		public void exit(ZombieAgent agent) {
+			agent.steer.getBody().setLinearVelocity(0, 0);
+			agent.steer.getBody().setAngularVelocity(0.0f);
+//			agent.steer.getBody().setAwake(false);
+			agent.steer.setSteeringBehavior(null);
+		}
+		
+		@Override
 		public boolean onMessage(ZombieAgent agent, Telegram telegram) {
+			// handle new target spotted ?
+			return false;
+		}
+	},
+	
+	WANDER() {
+		
+		@Override
+		public void enter(ZombieAgent agent) {
+			agent.steer.setSteeringBehavior(agent.getWander());
+		}
+		
+		@Override
+		public void update(ZombieAgent agent) {
+			agent.steer.update(GdxAI.getTimepiece().getDeltaTime());
+		}
+
+		@Override
+		public void exit(ZombieAgent agent) {
+			agent.steer.getBody().setLinearVelocity(0, 0);
+			agent.steer.getBody().setAngularVelocity(0.0f);
+//			agent.steer.getBody().setAwake(false);
+			agent.steer.setSteeringBehavior(null);
+		}
+		
+		@Override
+		public boolean onMessage(ZombieAgent agent, Telegram telegram) {
+			// handle target spotted
 			return false;
 		}
 	},
@@ -34,48 +71,56 @@ public enum ZombieState implements State<ZombieAgent> {
 	ATTACK() {
 		@Override
 		public void enter(ZombieAgent agent) {
-			Gdx.app.log(this.toString(), "Enter " + agent.fsm.getCurrentState().toString());
 			agent.steer.getBody().setLinearVelocity(0, 0);
-//			agent.steer.getBody().setAngularVelocity(0.0f);
-			agent.steer.getBody().setActive(false);
+			agent.steer.getBody().setAngularVelocity(0.0f);
+//			agent.steer.getBody().setAwake(false);
+//			agent.steer.setSteeringBehavior(null);
 			agent.timer = agent.attackTime;
 		}
 		
 		@Override
 		public void update(ZombieAgent agent) {
 			if (agent.timer <= 0) {
-				agent.fsm.changeState(ZombieState.STEER);
+				agent.fsm.changeState(ZombieState.PURSUE);
+				return;
 			} else {
 				agent.timer -= GdxAI.getTimepiece().getDeltaTime();
 			}			
 		}
-
+		
+		@Override
+		public void exit(ZombieAgent agent) {
+			agent.timer = 0;
+		}
+		
 		@Override
 		public boolean onMessage(ZombieAgent agent, Telegram telegram) {
+			// handle interrupts
 			return false;
 		}
 	},
 	
-	GLOBAL_STATE() {
+	GLOBAL() {
 
 		@Override
-		public void update(ZombieAgent agent) {
-			 // eventually look for targets here
+		public void enter(ZombieAgent entity) {
+			// must be called manually
 		}
 
 		@Override
-		public boolean onMessage(ZombieAgent agent, Telegram telegram) {
+		public void update(ZombieAgent entity) {
+			// automatically called before each update
+		}
+
+		@Override
+		public void exit(ZombieAgent entity) {
+			// must be called manually
+		}
+
+		@Override
+		public boolean onMessage(ZombieAgent entity, Telegram telegram) {
 			return false;
 		}
+		
 	};
-	
-	@Override
-	public void enter(ZombieAgent agent) {
-		Gdx.app.log(this.toString(), "Enter " + agent.fsm.getCurrentState().toString());
-	}
-	
-	@Override
-	public void exit(ZombieAgent agent) {
-		Gdx.app.log(this.toString(), "Exit " + agent.fsm.getCurrentState().toString());
-	}
 }
