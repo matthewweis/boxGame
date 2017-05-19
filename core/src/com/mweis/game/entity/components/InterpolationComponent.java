@@ -15,10 +15,10 @@ public class InterpolationComponent implements Component {
 		angle = 0.0f;
 	}
 	
-	public void synchronize(Body body) {
-		this.oldPosition.set(body.getPosition());
-		this.position.set(this.oldPosition);
-		this.oldAngle = body.getAngle();
-		this.angle = this.oldAngle;
-	}
+//	public void synchronize(Body body) {
+//		this.oldPosition.set(body.getPosition());
+//		this.position.set(this.oldPosition);
+//		this.oldAngle = body.getAngle();
+//		this.angle = this.oldAngle;
+//	}
 }

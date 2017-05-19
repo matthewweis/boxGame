@@ -15,6 +15,7 @@ import com.mweis.game.box2d.Box2dSteeringUtils;
 import com.mweis.game.util.Constants;
 
 public class SteeringComponent implements Component, Steerable<Vector2> {
+
 	private Body body;
  
 	private float boundingRadius;
@@ -188,6 +189,7 @@ public class SteeringComponent implements Component, Steerable<Vector2> {
 			if (currentSpeedSquare > maxLinearSpeed * maxLinearSpeed) {
 				body.setLinearVelocity(velocity.scl(maxLinearSpeed / (float)Math.sqrt(currentSpeedSquare)));
 			}
+			
 
 			// Cap the angular speed
 			float maxAngVelocity = getMaxAngularSpeed();
@@ -288,5 +290,4 @@ public class SteeringComponent implements Component, Steerable<Vector2> {
 	public void setZeroLinearSpeedThreshold (float value) {
 		throw new UnsupportedOperationException();
 	}
-
 }

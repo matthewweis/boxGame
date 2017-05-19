@@ -48,7 +48,6 @@ public enum PlayerState implements State<PlayerAgent> {
 					return; // must return after state change
 				}
 			}
-			agent.steer.update(GdxAI.getTimepiece().getDeltaTime());
 		}
 
 		@Override
@@ -75,7 +74,7 @@ public enum PlayerState implements State<PlayerAgent> {
 
 		@Override
 		public void update(PlayerAgent agent) {
-			agent.steer.update(GdxAI.getTimepiece().getDeltaTime());
+			
 		}
 
 		@Override

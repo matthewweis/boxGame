@@ -31,6 +31,7 @@ import com.mweis.game.entity.agents.ZombieAgent;
 import com.mweis.game.entity.components.AgentComponent;
 import com.mweis.game.entity.fsm.ZombieState;
 import com.mweis.game.entity.systems.AgentSystem;
+import com.mweis.game.entity.systems.SteeringSystem;
 import com.mweis.game.gfx.RenderingManager;
 import com.mweis.game.util.Constants;
 import com.mweis.game.util.Mappers;
@@ -69,26 +70,26 @@ public class GameScreen implements Screen {
 		float h = 480.0f/1.0f; //  /8 = 60
 		cam = new OrthographicCamera(w, h);
 		batch = new SpriteBatch();
-        world = WorldFactory.generateWorld(true);
+        world = WorldFactory.generateWorld(false);
 //        rayHandler = new RayHandler(world);
         debugRenderer = new Box2DDebugRenderer();
         
         engine = new Engine();
 		engine.addSystem(new AgentSystem());
+		engine.addSystem(new SteeringSystem());
 		
 		// make 2 entities, one of which chases the other
-		boolean independentFacing = false;
-		Entity target = EntityFactory.spawnZombie(5, 0, world, engine, false, 0.60f, independentFacing);
-		Entity chaser = EntityFactory.spawnZombie(0, 5, world, engine, false, 0.60f, independentFacing);
-		Entity player = EntityFactory.spawnPlayer(0, 0, world, engine, 1.0f);
+		Entity player = EntityFactory.spawnPlayer(0, 0, world, engine, 1.0f);		
+		Entity target = EntityFactory.spawnZombie(5, 0, world, engine, false, 0.60f, player);
+		Entity chaser = EntityFactory.spawnZombie(0, 5, world, engine, false, 0.60f, player);
 		
+		// setup of initial behaviors should be eventually removed
+		// instead, let all Zombies start in wander state, where they raycast for enemy players
 		AgentComponent<ZombieAgent> zombie1 = Mappers.agentMapper.get(target);
 		AgentComponent<ZombieAgent> zombie2 = Mappers.agentMapper.get(chaser);
 		
-		zombie1.agent.setWander();
-		zombie1.agent.setPursue(Mappers.steeringMapper.get(player));
-		zombie2.agent.setWander();
-		zombie2.agent.setPursue(Mappers.steeringMapper.get(player));
+//		zombie1.agent.setPursue(Mappers.steeringMapper.get(player));
+//		zombie2.agent.setPursue(Mappers.steeringMapper.get(player));
 		
 		zombie1.agent.fsm.changeState(ZombieState.PURSUE);
 		zombie2.agent.fsm.changeState(ZombieState.PURSUE);
@@ -138,7 +139,7 @@ public class GameScreen implements Screen {
 	private void draw() {
 		Matrix4 drawMat = new Matrix4(cam.combined);
 		drawMat.scl(Constants.PPM);
-		
+		Constants.projectionMatrix = drawMat;
 //		RenderingManager.render(cam.combined, batch, engine);
 //		RenderingManager.render(drawMat, batch, engine);
 //		rayHandler.setCombinedMatrix(drawMat);

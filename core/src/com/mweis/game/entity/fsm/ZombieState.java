@@ -4,15 +4,18 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.ai.GdxAI;
 import com.badlogic.gdx.ai.fsm.State;
 import com.badlogic.gdx.ai.msg.Telegram;
+import com.badlogic.gdx.ai.steer.behaviors.PrioritySteering;
+import com.badlogic.gdx.ai.utils.Ray;
 import com.badlogic.gdx.math.Vector2;
 import com.mweis.game.entity.agents.ZombieAgent;
+import com.mweis.game.util.Constants;
 
 public enum ZombieState implements State<ZombieAgent> {
 	PURSUE() {
 		
 		@Override
 		public void enter(ZombieAgent agent) {
-			agent.steer.setSteeringBehavior(agent.getPursue());
+			agent.steer.setSteeringBehavior(agent.prioritySteeringSB);
 		}
 		
 		@Override
@@ -23,14 +26,18 @@ public enum ZombieState implements State<ZombieAgent> {
 					return; // must return after state change
 				}
 			}
-			agent.steer.update(GdxAI.getTimepiece().getDeltaTime());
+//			System.out.println(((PrioritySteering)agent.steer.getSteeringBehavior()).getSelectedBehaviorIndex());
+			for (Ray ray : agent.psrc.getRays()) {
+				Constants.DrawDebugLine((Vector2)ray.start, (Vector2)ray.end);
+			}
+//			agent.steer.update(GdxAI.getTimepiece().getDeltaTime());
 		}
 
 		@Override
 		public void exit(ZombieAgent agent) {
 			agent.steer.getBody().setLinearVelocity(0, 0);
 			agent.steer.getBody().setAngularVelocity(0.0f);
-//			agent.steer.getBody().setAwake(false);
+			agent.steer.getBody().setAwake(false);
 			agent.steer.setSteeringBehavior(null);
 		}
 		
@@ -50,7 +57,7 @@ public enum ZombieState implements State<ZombieAgent> {
 		
 		@Override
 		public void update(ZombieAgent agent) {
-			agent.steer.update(GdxAI.getTimepiece().getDeltaTime());
+//			agent.steer.update(GdxAI.getTimepiece().getDeltaTime());
 		}
 
 		@Override

@@ -4,12 +4,20 @@ import com.badlogic.ashley.core.Entity;
 import com.badlogic.gdx.ai.fsm.DefaultStateMachine;
 import com.badlogic.gdx.ai.fsm.StateMachine;
 import com.badlogic.gdx.ai.msg.Telegram;
+import com.badlogic.gdx.ai.steer.behaviors.PrioritySteering;
 import com.badlogic.gdx.ai.steer.behaviors.Pursue;
+import com.badlogic.gdx.ai.steer.behaviors.RaycastObstacleAvoidance;
 import com.badlogic.gdx.ai.steer.behaviors.Wander;
+import com.badlogic.gdx.ai.steer.utils.rays.ParallelSideRayConfiguration;
+import com.badlogic.gdx.ai.steer.utils.rays.SingleRayConfiguration;
+import com.badlogic.gdx.ai.utils.RaycastCollisionDetector;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.physics.box2d.World;
+import com.mweis.game.box2d.Box2dRaycastCollisionDetector;
 import com.mweis.game.entity.components.SteeringComponent;
 import com.mweis.game.entity.fsm.ZombieState;
+import com.mweis.game.util.Constants;
 import com.mweis.game.util.Mappers;
 
 public class ZombieAgent implements Agent {
@@ -21,14 +29,26 @@ public class ZombieAgent implements Agent {
 	
 	private Pursue<Vector2> pursue;
 	private Wander<Vector2> wander;
+	public RaycastObstacleAvoidance<Vector2> raycast;
+	public PrioritySteering<Vector2> prioritySteeringSB;
+	public SingleRayConfiguration<Vector2> src;
+	public ParallelSideRayConfiguration<Vector2> psrc;
 	
-	public ZombieAgent(Entity entity) {
+	public ZombieAgent(Entity entity, World world, Entity target) {
 		this.fsm = new DefaultStateMachine<ZombieAgent, ZombieState>(this);
 		this.steer = Mappers.steeringMapper.get(entity);
-		target = null;
 //		MessageManager.getInstance().addListener(this, Messages.SOME_MESSAGE_HERE);
+		setWander();
+		setPursue(Mappers.steeringMapper.get(target));
+		RaycastCollisionDetector<Vector2> rcd = new Box2dRaycastCollisionDetector(world);
+		src = new SingleRayConfiguration<Vector2>(this.steer, Constants.MPP*100);
+		psrc = new ParallelSideRayConfiguration<Vector2>(this.steer, Constants.MPP*100,
+				this.steer.getBoundingRadius());
+		raycast = new RaycastObstacleAvoidance<Vector2>(this.steer, psrc, rcd);
+		prioritySteeringSB = new PrioritySteering<Vector2>(this.steer, this.steer.getZeroLinearSpeedThreshold())
+				.add(raycast).add(pursue);
 		
-		fsm.setGlobalState(ZombieState.GLOBAL); // always do states last
+		fsm.setGlobalState(ZombieState.GLOBAL); // always do states last (because init will be called)
 	}
 	
 	

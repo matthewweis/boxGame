@@ -23,7 +23,7 @@ import com.mweis.game.gfx.ResourceManager;
 
 public class EntityFactory {
 	
-	public static Entity spawnZombie(float x, float y, World world, Engine engine, boolean isSensor, float speedFactor, boolean independentFacing) {
+	public static Entity spawnZombie(float x, float y, World world, Engine engine, boolean isSensor, float speedFactor, Entity target) {
 		float radius = 0.32f;
 		float density = 5.0f;
 		Body body = Box2dBodyFactory.createDynamicCircle(new Vector2(x, y), radius, world, isSensor, density);
@@ -37,7 +37,7 @@ public class EntityFactory {
 		InterpolationComponent ic = new InterpolationComponent();
 		entity.add(ic);
 		
-		SteeringComponent sc = new SteeringComponent(body, independentFacing, radius);
+		SteeringComponent sc = new SteeringComponent(body, false, radius);
 		
 		// FOR ARRIVE
 //		sc.setMaxLinearSpeed(5);
@@ -53,7 +53,7 @@ public class EntityFactory {
 //		}
 		
 		entity.add(sc);
-		AgentComponent<ZombieAgent> ac = new AgentComponent<ZombieAgent>(new ZombieAgent(entity));
+		AgentComponent<ZombieAgent> ac = new AgentComponent<ZombieAgent>(new ZombieAgent(entity, world, target));
 		
 		entity.add(ac);
 		
@@ -91,10 +91,10 @@ public class EntityFactory {
 //			sc.setMaxAngularAcceleration(10f*speedFactor); // greater than 0 because independent facing is enabled
 //			sc.setMaxAngularSpeed(20*speedFactor);
 //		}
-		
 		entity.add(sc);
-		AgentComponent<PlayerAgent> ac = new AgentComponent<PlayerAgent>(new PlayerAgent(entity, world));
 		
+		
+		AgentComponent<PlayerAgent> ac = new AgentComponent<PlayerAgent>(new PlayerAgent(entity, world));
 		entity.add(ac);
 		
 //		ic.synchronize(body);
